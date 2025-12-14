@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, TextInput, StyleSheet, TouchableOpacity, Text } from 'react-native';
+import { View, TextInput, StyleSheet, Pressable } from 'react-native';
 import { Feather } from '@react-native-vector-icons/feather';
 import { colors, spacing, borderRadius } from '../theme/colors';
 
@@ -18,6 +18,8 @@ const SearchBar: React.FC<SearchBarProps> = ({
 }) => {
   return (
     <View style={styles.container}>
+      <Feather name="search" size={20} color={colors.textSecondary} style={styles.searchIcon} />
+      
       <TextInput
         style={styles.input}
         value={value}
@@ -27,10 +29,12 @@ const SearchBar: React.FC<SearchBarProps> = ({
         returnKeyType="search"
         onSubmitEditing={onSearch}
       />
+      
+      {/* Clear button appears when there's text */}
       {value.length > 0 && (
-        <TouchableOpacity style={styles.clearButton} onPress={() => onChangeText('')}>
+        <Pressable style={styles.clearButton} onPress={() => onChangeText('')}>
           <Feather name="x" size={18} color={colors.textSecondary} />
-        </TouchableOpacity>
+        </Pressable>
       )}
     </View>
   );
@@ -47,6 +51,9 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
   },
+  searchIcon: {
+    marginRight: spacing.sm,
+  },
   input: {
     flex: 1,
     fontSize: 16,
@@ -55,6 +62,6 @@ const styles = StyleSheet.create({
   clearButton: {
     padding: spacing.xs,
   },
-  });
+});
 
 export default SearchBar;

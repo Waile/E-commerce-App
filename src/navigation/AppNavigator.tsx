@@ -1,9 +1,9 @@
 import React from 'react';
-import { NavigationContainer } from '@react-navigation/native';
+import { NavigationContainer, DefaultTheme, DarkTheme } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { View, StyleSheet, Pressable } from 'react-native';
-import { Feather } from '@react-native-vector-icons/feather'
+import { View, StyleSheet, Pressable, StatusBar } from 'react-native';
+import { Feather } from '@react-native-vector-icons/feather';
 
 import ProductListScreen from '../screens/ProductListScreen';
 import ProductDetailScreen from '../screens/ProductDetailScreen';
@@ -12,7 +12,9 @@ import CheckoutScreen from '../screens/CheckoutScreen';
 
 import { useAppSelector } from '../hooks/useAppDispatch';
 import CartBadge from '../components/CartBadge';
-import { borderRadius, colors } from '../theme/colors';
+import ThemeToggle from '../components/ThemeToggle';
+import { useTheme } from '../context/ThemeContext';
+import { borderRadius } from '../theme/theme';
 import { RootState } from '../store';
 import { Product } from '../types';
 
@@ -33,14 +35,15 @@ const Tab = createBottomTabNavigator();
 // Products Stack Navigator
 const ProductsStack = () => {
   const cartItemsCount = useAppSelector((state: RootState) => state.cart.totalItems);
+  const { theme } = useTheme();
 
   return (
     <ProductsStackNavigator.Navigator
       screenOptions={{
         headerStyle: {
-          backgroundColor: colors.primary,
+          backgroundColor: theme.primary,
         },
-        headerTintColor: colors.background,
+        headerTintColor: theme.background,
         headerTitleStyle: {
           fontWeight: '700',
         },
@@ -51,13 +54,14 @@ const ProductsStack = () => {
         component={ProductListScreen}
         options={({ navigation }: { navigation: any }) => ({
           title: 'Products',
+          headerLeft: () => <ThemeToggle />,
           headerRight: () => (
             <Pressable
               style={styles.cartButton}
               onPress={() => navigation.navigate('CartTab')}
             >
               <CartBadge count={cartItemsCount} style={styles.headerBadge} />
-             <Feather name="shopping-cart" size={24} color={colors.background} />
+              <Feather name="shopping-cart" size={24} color={theme.background} />
             </Pressable>
           ),
         })}
@@ -75,13 +79,15 @@ const ProductsStack = () => {
 
 // Cart Stack Navigator
 const CartStack = () => {
+  const { theme } = useTheme();
+
   return (
     <CartStackNavigator.Navigator
       screenOptions={{
         headerStyle: {
-          backgroundColor: colors.primary,
+          backgroundColor: theme.primary,
         },
-        headerTintColor: colors.background,
+        headerTintColor: theme.background,
         headerTitleStyle: {
           fontWeight: '700',
         },
@@ -104,16 +110,18 @@ const CartStack = () => {
 // Bottom Tab Navigator
 const TabNavigator = () => {
   const cartItemsCount = useAppSelector((state: RootState) => state.cart.totalItems);
+  const { theme } = useTheme();
 
   return (
     <Tab.Navigator
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: colors.primary,
-        tabBarInactiveTintColor: colors.textSecondary,
+        tabBarActiveTintColor: theme.primary,
+        tabBarInactiveTintColor: theme.textSecondary,
         tabBarStyle: {
+          backgroundColor: theme.background,
           borderTopWidth: 1,
-          borderTopColor: colors.border,
+          borderTopColor: theme.border,
           paddingTop: 8,
           paddingBottom: 8,
           height: 60,
@@ -151,10 +159,31 @@ const TabNavigator = () => {
 };
 
 const AppNavigator = () => {
+  const { theme, isDark } = useTheme();
+
+  // Custom navigation theme based on app theme
+  const navigationTheme = {
+    ...isDark ? DarkTheme : DefaultTheme,
+    colors: {
+      ...isDark ? DarkTheme.colors : DefaultTheme.colors,
+      primary: theme.primary,
+      background: theme.background,
+      card: theme.card,
+      text: theme.text,
+      border: theme.border,
+    },
+  };
+
   return (
-    <NavigationContainer>
-      <TabNavigator />
-    </NavigationContainer>
+    <>
+      <StatusBar
+        barStyle={isDark ? 'light-content' : 'dark-content'}
+        backgroundColor={theme.primary}
+      />
+      <NavigationContainer theme={navigationTheme}>
+        <TabNavigator />
+      </NavigationContainer>
+    </>
   );
 };
 

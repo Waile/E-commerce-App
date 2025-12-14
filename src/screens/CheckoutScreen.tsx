@@ -1,12 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
-  ScrollView,
-  TextInput,
+  FlatList,
   StyleSheet,
   TouchableOpacity,
-  Alert,
+  Pressable,
 } from 'react-native';
 import { useAppDispatch, useAppSelector } from '../hooks/useAppDispatch';
 import { clearCart } from '../store/slices/cartSlice';
@@ -15,6 +14,9 @@ import { CheckoutFormData, CartItem } from '../types';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { CartStackParamList } from '../types/navigation';
 import { RootState } from '../store';
+import OrderSummaryItem from '../components/OrderSummaryItem';
+import DeliveryForm from '../components/DeliveryForm';
+import CustomAlert from '../components/CustomAlert';
 
 type CheckoutScreenNavigationProp = NativeStackNavigationProp<
   CartStackParamList,
@@ -29,6 +31,7 @@ const CheckoutScreen: React.FC<CheckoutScreenProps> = ({ navigation }) => {
   const dispatch = useAppDispatch();
   const { items, totalAmount } = useAppSelector((state: RootState) => state.cart);
   
+  // Form state management
   const [formData, setFormData] = useState<CheckoutFormData>({
     fullName: '',
     email: '',
@@ -39,7 +42,10 @@ const CheckoutScreen: React.FC<CheckoutScreenProps> = ({ navigation }) => {
   });
 
   const [errors, setErrors] = useState<Partial<CheckoutFormData>>({});
+  const [showSuccessAlert, setShowSuccessAlert] = useState(false);
+  const [showErrorAlert, setShowErrorAlert] = useState(false);
 
+  // Validate all form fields before submission
   const validateForm = (): boolean => {
     const newErrors: Partial<CheckoutFormData> = {};
 
@@ -75,163 +81,124 @@ const CheckoutScreen: React.FC<CheckoutScreenProps> = ({ navigation }) => {
     return Object.keys(newErrors).length === 0;
   };
 
+  // Handle order submission
   const handlePlaceOrder = () => {
     if (!validateForm()) {
-      Alert.alert('Validation Error', 'Please fill in all required fields correctly.');
+      setShowErrorAlert(true);
       return;
     }
 
-    // Simulate order placement
-    Alert.alert(
-      'Order Placed!',
-      `Thank you for your order, ${formData.fullName}!\n\nTotal: $${totalAmount.toFixed(2)}\n\nYour order will be delivered to:\n${formData.address}, ${formData.city} ${formData.zipCode}`,
-      [
-        {
-          text: 'OK',
-          onPress: () => {
-            dispatch(clearCart());
-            navigation.getParent()?.navigate('Products');
-          },
-        },
-      ]
-    );
+    // Show success message and clear cart
+    setShowSuccessAlert(true);
   };
 
-  const updateField = (field: keyof CheckoutFormData, value: string) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
-    // Clear error when user starts typing
-    if (errors[field]) {
-      setErrors(prev => ({ ...prev, [field]: undefined }));
-    }
+  // Navigate back to products after successful order
+  const handleOrderSuccess = () => {
+    dispatch(clearCart());
+    setShowSuccessAlert(false);
+    navigation.getParent()?.navigate('Products');
   };
 
-  return (
-    <View style={styles.container}>
-      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+  // Update form field and clear its error
+  const updateField = useCallback((field: keyof CheckoutFormData, value: string) => {
+    setFormData((prev) => ({ ...prev, [field]: value }));
+    
+    setErrors((prev) => {
+      if (prev[field]) {
+        return { ...prev, [field]: undefined };
+      }
+      return prev;
+    });
+  }, []);
+
+  // Render individual order item
+  const renderOrderItem = useCallback(
+    ({ item, index }: { item: CartItem; index: number }) => (
+      <OrderSummaryItem item={item} isLast={index === items.length - 1} />
+    ),
+    [items.length]
+  );
+
+  // Header component for the FlatList
+  const listHeader = useMemo(
+    () => (
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Order Summary</Text>
+      </View>
+    ),
+    []
+  );
+
+  // Footer component showing total and delivery form
+  const listFooter = useMemo(
+    () => (
+      <>
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Order Summary</Text>
-          {items.map((item: CartItem,index) => (
-            <View key={item.product.id} style={[styles.orderItem,index===items.length-1&&styles.lastItem]}>
-              <Text style={styles.orderItemName} numberOfLines={1}>
-                {item.product.title}
-              </Text>
-              <Text style={styles.orderItemDetails}>
-                {item.quantity} × ${item.product.price}
-              </Text>
-              <Text style={styles.orderItemPrice}>
-                ${(item.quantity * item.product.price).toFixed(2)}
-              </Text>
-            </View>
-          ))}
-          
           <View style={styles.totalContainer}>
             <Text style={styles.totalLabel}>Total Amount</Text>
             <Text style={styles.totalAmount}>${totalAmount.toFixed(2)}</Text>
           </View>
         </View>
 
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Delivery Information</Text>
-          
-          <View style={styles.inputContainer}>
-            <Text style={styles.label}>Full Name *</Text>
-            <TextInput
-              style={[styles.input, errors.fullName && styles.inputError]}
-              value={formData.fullName}
-              onChangeText={text => updateField('fullName', text)}
-              placeholder="John Doe"
-              placeholderTextColor={colors.textSecondary}
-            />
-            {errors.fullName && (
-              <Text style={styles.errorText}>{errors.fullName}</Text>
-            )}
-          </View>
+        <DeliveryForm
+          formData={formData}
+          errors={errors}
+          onFieldChange={updateField}
+        />
+      </>
+    ),
+    [formData, errors, totalAmount]
+  );
 
-          <View style={styles.inputContainer}>
-            <Text style={styles.label}>Email *</Text>
-            <TextInput
-              style={[styles.input, errors.email && styles.inputError]}
-              value={formData.email}
-              onChangeText={text => updateField('email', text)}
-              placeholder="john@gmail.com"
-              placeholderTextColor={colors.textSecondary}
-              keyboardType="email-address"
-              autoCapitalize="none"
-            />
-            {errors.email && (
-              <Text style={styles.errorText}>{errors.email}</Text>
-            )}
-          </View>
+  return (
+    <View style={styles.container}>
+      <FlatList
+        data={items}
+        keyExtractor={(item) => item.product.id.toString()}
+        renderItem={renderOrderItem}
+        ListHeaderComponent={listHeader}
+        ListFooterComponent={listFooter}
+        contentContainerStyle={styles.listContent}
+        showsVerticalScrollIndicator={false}
+      />
 
-          <View style={styles.inputContainer}>
-            <Text style={styles.label}>Phone Number *</Text>
-            <TextInput
-              style={[styles.input, errors.phone && styles.inputError]}
-              value={formData.phone}
-              onChangeText={text => updateField('phone', text)}
-              placeholder="03456789012"
-              placeholderTextColor={colors.textSecondary}
-              keyboardType="phone-pad"
-            />
-            {errors.phone && (
-              <Text style={styles.errorText}>{errors.phone}</Text>
-            )}
-          </View>
-
-          <View style={styles.inputContainer}>
-            <Text style={styles.label}>Address *</Text>
-            <TextInput
-              style={[styles.input, styles.textArea, errors.address && styles.inputError]}
-              value={formData.address}
-              onChangeText={text => updateField('address', text)}
-              placeholder="House No. 1, Jinnah Street, Lahore"
-              placeholderTextColor={colors.textSecondary}
-              multiline
-              numberOfLines={3}
-            />
-            {errors.address && (
-              <Text style={styles.errorText}>{errors.address}</Text>
-            )}
-          </View>
-
-          <View style={styles.row}>
-            <View style={[styles.inputContainer, styles.halfWidth]}>
-              <Text style={styles.label}>City *</Text>
-              <TextInput
-                style={[styles.input, errors.city && styles.inputError]}
-                value={formData.city}
-                onChangeText={text => updateField('city', text)}
-                placeholder="Lahore"
-                placeholderTextColor={colors.textSecondary}
-              />
-              {errors.city && (
-                <Text style={styles.errorText}>{errors.city}</Text>
-              )}
-            </View>
-
-            <View style={[styles.inputContainer, styles.halfWidth]}>
-              <Text style={styles.label}>ZIP Code *</Text>
-              <TextInput
-                style={[styles.input, errors.zipCode && styles.inputError]}
-                value={formData.zipCode}
-                onChangeText={text => updateField('zipCode', text)}
-                placeholder="54000"
-                placeholderTextColor={colors.textSecondary}
-                keyboardType="number-pad"
-              />
-              {errors.zipCode && (
-                <Text style={styles.errorText}>{errors.zipCode}</Text>
-              )}
-            </View>
-          </View>
-        </View>
-      </ScrollView>
-
+      {/* Place Order Button */}
       <View style={styles.footer}>
-        <TouchableOpacity style={styles.placeOrderButton} onPress={handlePlaceOrder}>
+        <Pressable
+          style={styles.placeOrderButton}
+          onPress={handlePlaceOrder}
+        >
           <Text style={styles.placeOrderText}>Place Order</Text>
-        </TouchableOpacity>
+        </Pressable>
       </View>
+
+      {/* Success Alert */}
+      <CustomAlert
+        visible={showSuccessAlert}
+        title="Order Placed!"
+        message={`Thank you for your order, ${formData.fullName}!\n\nTotal: $${totalAmount.toFixed(2)}\n\nYour order will be delivered to:\n${formData.address}, ${formData.city} ${formData.zipCode}`}
+        buttons={[
+          {
+            text: 'OK',
+            onPress: handleOrderSuccess,
+          },
+        ]}
+        onClose={handleOrderSuccess}
+      />
+
+      {/* Validation Error Alert */}
+      <CustomAlert
+        visible={showErrorAlert}
+        title="Validation Error"
+        message="Please fill in all required fields correctly."
+        buttons={[
+          {
+            text: 'OK',
+            style: 'cancel',
+          },
+        ]}
+        onClose={() => setShowErrorAlert(false)}
+      />
     </View>
   );
 };
@@ -241,8 +208,8 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.background,
   },
-  scrollView: {
-    flex: 1,
+  listContent: {
+    flexGrow: 1,
   },
   section: {
     padding: spacing.md,
@@ -254,35 +221,6 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: colors.text,
     marginBottom: spacing.md,
-  },
-  orderItem: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: spacing.sm,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-  },
-  lastItem:{
-    borderBottomWidth:0
-  },
-  orderItemName: {
-    flex: 1,
-    fontSize: 14,
-    color: colors.text,
-    marginRight: spacing.sm,
-  },
-  orderItemDetails: {
-    fontSize: 13,
-    color: colors.textSecondary,
-    marginRight: spacing.sm,
-  },
-  orderItemPrice: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: colors.text,
-    minWidth: 60,
-    textAlign: 'right',
   },
   totalContainer: {
     flexDirection: 'row',
@@ -303,44 +241,6 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: colors.primary,
   },
-  inputContainer: {
-    marginBottom: spacing.md,
-  },
-  label: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: colors.text,
-    marginBottom: spacing.xs,
-  },
-  input: {
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: borderRadius.md,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    fontSize: 16,
-    color: colors.text,
-  },
-  inputError: {
-    borderColor: colors.error,
-  },
-  textArea: {
-    height: 80,
-    textAlignVertical: 'top',
-  },
-  errorText: {
-    fontSize: 12,
-    color: colors.error,
-    marginTop: spacing.xs,
-  },
-  row: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  halfWidth: {
-    width: '48%',
-  },
   footer: {
     padding: spacing.md,
     backgroundColor: colors.background,
@@ -348,7 +248,7 @@ const styles = StyleSheet.create({
     borderTopColor: colors.border,
   },
   placeOrderButton: {
-    backgroundColor: colors.success,
+    backgroundColor: colors.primary,
     paddingVertical: spacing.md,
     borderRadius: borderRadius.md,
     alignItems: 'center',

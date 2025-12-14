@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
+import { useFocusEffect } from '@react-navigation/native';
 import {
   View,
   FlatList,
@@ -19,7 +20,8 @@ import SearchBar from '../components/SearchBar';
 import CategoryFilter from '../components/CategoryFilter';
 import LoadingSpinner from '../components/LoadingSpinner';
 import ErrorMessage from '../components/ErrorMessage';
-import { colors, spacing } from '../theme/colors';
+import { useTheme } from '../context/ThemeContext';
+import { spacing } from '../theme/theme';
 import { Product } from '../types';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { ProductsStackParamList } from '../types/navigation';
@@ -36,28 +38,70 @@ interface ProductListScreenProps {
 
 const ProductListScreen: React.FC<ProductListScreenProps> = ({ navigation }) => {
   const dispatch = useAppDispatch();
+  const { theme } = useTheme();
   const { items, categories, selectedCategory, loading, error } = useAppSelector(
     (state: RootState) => state.products
   );
   const [searchQuery, setSearchQuery] = useState('');
   const [refreshing, setRefreshing] = useState(false);
 
+  // Load products and categories when component mounts
   useEffect(() => {
     dispatch(fetchProducts());
     dispatch(fetchCategories());
   }, [dispatch]);
 
+  // Reset search when user returns to this screen
+  useFocusEffect(
+    useCallback(() => {
+      // Clear search and show all products when coming back
+      if (searchQuery) {
+        setSearchQuery('');
+        if (selectedCategory === 'all') {
+          dispatch(fetchProducts());
+        } else {
+          dispatch(fetchProductsByCategory(selectedCategory));
+        }
+      }
+    }, [searchQuery, selectedCategory, dispatch])
+  );
+
+  // Trigger search when user presses search button or hits enter
   const handleSearch = useCallback(() => {
     if (searchQuery.trim()) {
       dispatch(searchProducts(searchQuery));
     } else {
-      dispatch(fetchProducts());
+      // If search is empty, restore products based on selected category
+      if (selectedCategory === 'all') {
+        dispatch(fetchProducts());
+      } else {
+        dispatch(fetchProductsByCategory(selectedCategory));
+      }
     }
-  }, [searchQuery, dispatch]);
+  }, [searchQuery, dispatch, selectedCategory]);
 
+  // Handle text change in search bar
+  const handleSearchTextChange = useCallback(
+    (text: string) => {
+      setSearchQuery(text);
+      
+      // If user clears the search, automatically restore products
+      if (text.trim() === '') {
+        if (selectedCategory === 'all') {
+          dispatch(fetchProducts());
+        } else {
+          dispatch(fetchProductsByCategory(selectedCategory));
+        }
+      }
+    },
+    [dispatch, selectedCategory]
+  );
+
+  // Handle category selection
   const handleCategorySelect = useCallback(
     (category: string) => {
       dispatch(setSelectedCategory(category));
+      // Clear search when switching categories
       setSearchQuery('');
       
       if (category === 'all') {
@@ -69,22 +113,25 @@ const ProductListScreen: React.FC<ProductListScreenProps> = ({ navigation }) => 
     [dispatch]
   );
 
+  // Handle pull-to-refresh
   const handleRefresh = useCallback(async () => {
     setRefreshing(true);
     try {
-      if (selectedCategory === 'all') {
+      // If user is searching, refresh search results
+      if (searchQuery.trim()) {
+        await dispatch(searchProducts(searchQuery)).unwrap();
+      } else if (selectedCategory === 'all') {
         await dispatch(fetchProducts()).unwrap();
       } else {
         await dispatch(fetchProductsByCategory(selectedCategory)).unwrap();
       }
     } catch (error) {
       console.log("Error fetching products: ", error);
-      
-      // Error handled by Redux
     }
     setRefreshing(false);
-  }, [dispatch, selectedCategory]);
+  }, [dispatch, selectedCategory, searchQuery]);
 
+  // Navigate to product detail screen
   const handleProductPress = useCallback(
     (product: Product) => {
       navigation.navigate('ProductDetail', { product });
@@ -106,11 +153,11 @@ const ProductListScreen: React.FC<ProductListScreenProps> = ({ navigation }) => 
   }
 
   return (
-    <View style={styles.container}>
-      <View style={styles.searchContainer}>
+    <View style={[styles.container, { backgroundColor: theme.background }]}>
+      <View style={[styles.searchContainer, { backgroundColor: theme.background }]}>
         <SearchBar
           value={searchQuery}
-          onChangeText={setSearchQuery}
+          onChangeText={handleSearchTextChange}
           onSearch={handleSearch}
         />
       </View>
@@ -123,7 +170,7 @@ const ProductListScreen: React.FC<ProductListScreenProps> = ({ navigation }) => 
 
       {items.length === 0 ? (
         <View style={styles.emptyContainer}>
-          <Text style={styles.emptyText}>No products found</Text>
+          <Text style={[styles.emptyText, { color: theme.textSecondary }]}>No products found</Text>
         </View>
       ) : (
         <FlatList
@@ -142,7 +189,7 @@ const ProductListScreen: React.FC<ProductListScreenProps> = ({ navigation }) => 
             <RefreshControl
               refreshing={refreshing}
               onRefresh={handleRefresh}
-              colors={[colors.primary]}
+              colors={[theme.primary]}
             />
           }
         />
@@ -154,11 +201,9 @@ const ProductListScreen: React.FC<ProductListScreenProps> = ({ navigation }) => 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background,
   },
   searchContainer: {
     padding: spacing.md,
-    backgroundColor: colors.background,
   },
   row: {
     justifyContent: 'space-between',
@@ -175,7 +220,6 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 16,
-    color: colors.textSecondary,
   },
 });
 
