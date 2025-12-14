@@ -7,13 +7,14 @@ import {
   StyleSheet,
   TouchableOpacity,
   Dimensions,
-  Alert,
+  Pressable,
 } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useAppDispatch } from '../hooks/useAppDispatch';
 import { addToCart } from '../store/slices/cartSlice';
 import { colors, spacing, borderRadius } from '../theme/colors';
 import { ProductsStackParamList } from '../navigation/AppNavigator';
+import CustomAlert from '../components/CustomAlert';
 
 const { width } = Dimensions.get('window');
 
@@ -26,20 +27,11 @@ const ProductDetailScreen = ({
   const { product } = route.params;
   const dispatch = useAppDispatch();
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
+  const [alertVisible, setAlertVisible] = useState(false);
 
   const handleAddToCart = () => {
     dispatch(addToCart(product));
-    Alert.alert(
-      'Added to Cart',
-      `${product.title} has been added to your cart.`,
-      [
-        { text: 'Continue Shopping', style: 'cancel' },
-        {
-          text: 'View Cart',
-          onPress: () => navigation.getParent()?.navigate('CartTab'),
-        },
-      ]
-    );
+    setAlertVisible(true);
   };
 
   return (
@@ -60,7 +52,7 @@ const ProductDetailScreen = ({
               style={styles.thumbnailContainer}
             >
               {product.images.map((image, index) => (
-                <TouchableOpacity
+                <Pressable
                   key={index}
                   onPress={() => setSelectedImageIndex(index)}
                   style={[
@@ -72,7 +64,7 @@ const ProductDetailScreen = ({
                     source={{ uri: image }}
                     style={styles.thumbnailImage}
                   />
-                </TouchableOpacity>
+                </Pressable>
               ))}
             </ScrollView>
           )}
@@ -142,6 +134,20 @@ const ProductDetailScreen = ({
           </Text>
         </TouchableOpacity>
       </View>
+
+      <CustomAlert
+        visible={alertVisible}
+        title="Added to Cart"
+        message={`${product.title} has been added to your cart.`}
+        buttons={[
+          { text: 'Keep Shopping', style: 'cancel' },
+          {
+            text: 'View Cart',
+            onPress: () => navigation.getParent()?.navigate('CartTab'),
+          },
+        ]}
+        onClose={() => setAlertVisible(false)}
+      />
     </View>
   );
 };
