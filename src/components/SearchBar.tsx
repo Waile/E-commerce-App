@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, TextInput, StyleSheet, TouchableOpacity, Text } from 'react-native';
+import { Feather } from '@react-native-vector-icons/feather';
 import { colors, spacing, borderRadius } from '../theme/colors';
 
 interface SearchBarProps {
@@ -28,7 +29,7 @@ const SearchBar: React.FC<SearchBarProps> = ({
       />
       {value.length > 0 && (
         <TouchableOpacity style={styles.clearButton} onPress={() => onChangeText('')}>
-          <Text style={styles.clearText}>✕</Text>
+          <Feather name="x" size={18} color={colors.textSecondary} />
         </TouchableOpacity>
       )}
     </View>
@@ -54,10 +55,6 @@ const styles = StyleSheet.create({
   clearButton: {
     padding: spacing.xs,
   },
-  clearText: {
-    fontSize: 18,
-    color: colors.textSecondary,
-  },
-});
+  });
 
 export default SearchBar;
