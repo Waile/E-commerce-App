@@ -1,20 +1,18 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { TouchableOpacity, View, StyleSheet } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import Icon from 'react-native-vector-icons/Ionicons';
+import { View, StyleSheet, Pressable } from 'react-native';
+import { Feather } from '@react-native-vector-icons/feather'
 
 import ProductListScreen from '../screens/ProductListScreen';
 import ProductDetailScreen from '../screens/ProductDetailScreen';
 import CartScreen from '../screens/CartScreen';
 import CheckoutScreen from '../screens/CheckoutScreen';
 
-import { useAppDispatch, useAppSelector } from '../hooks/useAppDispatch';
-import { loadCartFromStorage } from '../store/slices/cartSlice';
+import { useAppSelector } from '../hooks/useAppDispatch';
 import CartBadge from '../components/CartBadge';
-import { colors } from '../theme/colors';
+import { borderRadius, colors } from '../theme/colors';
 import { RootState } from '../store';
 import { Product } from '../types';
 
@@ -54,13 +52,13 @@ const ProductsStack = () => {
         options={({ navigation }: { navigation: any }) => ({
           title: 'Products',
           headerRight: () => (
-            <TouchableOpacity
+            <Pressable
               style={styles.cartButton}
               onPress={() => navigation.navigate('CartTab')}
             >
-              <Icon name="cart-outline" size={24} color={colors.background} />
-              <CartBadge count={cartItemsCount} />
-            </TouchableOpacity>
+              <CartBadge count={cartItemsCount} style={styles.headerBadge} />
+             <Feather name="shopping-cart" size={24} color={colors.background} />
+            </Pressable>
           ),
         })}
       />
@@ -131,7 +129,7 @@ const TabNavigator = () => {
         component={ProductsStack}
         options={{
           tabBarIcon: ({ color }: { color: string }) => (
-            <Icon name="storefront-outline" size={24} color={color} />
+            <Feather name="shopping-bag" size={24} color={color} />
           ),
         }}
       />
@@ -142,8 +140,8 @@ const TabNavigator = () => {
           tabBarLabel: 'Cart',
           tabBarIcon: ({ color }: { color: string }) => (
             <View>
-              <Icon name="cart-outline" size={24} color={color} />
-              <CartBadge count={cartItemsCount} />
+              <Feather name="shopping-cart" size={24} color={color} />
+              <CartBadge count={cartItemsCount} style={styles.badgePosition} />
             </View>
           ),
         }}
@@ -153,25 +151,6 @@ const TabNavigator = () => {
 };
 
 const AppNavigator = () => {
-  const dispatch = useAppDispatch();
-
-  // Load cart from AsyncStorage on app start
-  useEffect(() => {
-    const loadCart = async () => {
-      try {
-        const savedCart = await AsyncStorage.getItem('cart');
-        if (savedCart) {
-          const cartItems = JSON.parse(savedCart);
-          dispatch(loadCartFromStorage(cartItems));
-        }
-      } catch (error) {
-        console.log('Error loading cart:', error);
-      }
-    };
-
-    loadCart();
-  }, [dispatch]);
-
   return (
     <NavigationContainer>
       <TabNavigator />
@@ -181,9 +160,24 @@ const AppNavigator = () => {
 
 const styles = StyleSheet.create({
   cartButton: {
-    marginRight: 16,
-    position: 'relative',
+    marginRight: 10,
+    height:43,
+    width:43,
+    justifyContent:"center",
+    alignItems:"center"
   },
+  badgePosition:{
+    right: -6,
+    top: -10
+  },
+  headerBadge:{
+    right: 2,
+    top:0,
+    minWidth: 14,
+    minHeight: 14,
+    borderRadius:borderRadius.full
+    
+  }
 });
 
 export default AppNavigator;
