@@ -1,10 +1,10 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
-import { Product } from '../../types';
+import { Product, Category } from '../../types';
 import { productsApi } from '../../services/api';
 
 interface ProductsState {
   items: Product[];
-  categories: string[];
+  categories: Category[];
   selectedCategory: string;
   searchQuery: string;
   loading: boolean;
