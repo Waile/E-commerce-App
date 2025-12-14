@@ -1,5 +1,4 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { useFocusEffect } from '@react-navigation/native';
 import {
   View,
   FlatList,
@@ -51,20 +50,6 @@ const ProductListScreen: React.FC<ProductListScreenProps> = ({ navigation }) => 
     dispatch(fetchCategories());
   }, [dispatch]);
 
-  // Reset search when user returns to this screen
-  useFocusEffect(
-    useCallback(() => {
-      // Clear search and show all products when coming back
-      if (searchQuery) {
-        setSearchQuery('');
-        if (selectedCategory === 'all') {
-          dispatch(fetchProducts());
-        } else {
-          dispatch(fetchProductsByCategory(selectedCategory));
-        }
-      }
-    }, [searchQuery, selectedCategory, dispatch])
-  );
 
   // Trigger search when user presses search button or hits enter
   const handleSearch = useCallback(() => {
@@ -81,21 +66,9 @@ const ProductListScreen: React.FC<ProductListScreenProps> = ({ navigation }) => 
   }, [searchQuery, dispatch, selectedCategory]);
 
   // Handle text change in search bar
-  const handleSearchTextChange = useCallback(
-    (text: string) => {
-      setSearchQuery(text);
-      
-      // If user clears the search, automatically restore products
-      if (text.trim() === '') {
-        if (selectedCategory === 'all') {
-          dispatch(fetchProducts());
-        } else {
-          dispatch(fetchProductsByCategory(selectedCategory));
-        }
-      }
-    },
-    [dispatch, selectedCategory]
-  );
+  const handleSearchTextChange = useCallback((text: string) => {
+    setSearchQuery(text);
+  }, []);
 
   // Handle category selection
   const handleCategorySelect = useCallback(

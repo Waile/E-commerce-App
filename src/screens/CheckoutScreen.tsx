@@ -109,7 +109,7 @@ const CheckoutScreen: React.FC<CheckoutScreenProps> = ({ navigation }) => {
     // Clear any validation errors
     setErrors({});
     
-    navigation.getParent()?.navigate('Products');
+    navigation.getParent()?.reset({index:0, routes:[{name:"Products"}]});
   };
 
   // Update form field and clear its error
