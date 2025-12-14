@@ -24,6 +24,12 @@ export interface ProductsResponse {
   limit: number;
 }
 
+export interface Category {
+  slug: string;
+  name: string;
+  url: string;
+}
+
 export interface CheckoutFormData {
   fullName: string;
   email: string;
