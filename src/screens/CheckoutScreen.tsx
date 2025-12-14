@@ -55,8 +55,8 @@ const CheckoutScreen: React.FC<CheckoutScreenProps> = ({ navigation }) => {
 
     if (!formData.phone.trim()) {
       newErrors.phone = 'Phone number is required';
-    } else if (!/^\d{10,}$/.test(formData.phone.replace(/\D/g, ''))) {
-      newErrors.phone = 'Phone number must be at least 10 digits';
+    } else if (!/^\d{11,}$/.test(formData.phone.replace(/\D/g, ''))) {
+      newErrors.phone = 'Phone number must be at least 11 digits';
     }
 
     if (!formData.address.trim()) {
@@ -153,7 +153,7 @@ const CheckoutScreen: React.FC<CheckoutScreenProps> = ({ navigation }) => {
               style={[styles.input, errors.email && styles.inputError]}
               value={formData.email}
               onChangeText={text => updateField('email', text)}
-              placeholder="john@example.com"
+              placeholder="john@gmail.com"
               placeholderTextColor={colors.textSecondary}
               keyboardType="email-address"
               autoCapitalize="none"
@@ -169,7 +169,7 @@ const CheckoutScreen: React.FC<CheckoutScreenProps> = ({ navigation }) => {
               style={[styles.input, errors.phone && styles.inputError]}
               value={formData.phone}
               onChangeText={text => updateField('phone', text)}
-              placeholder="1234567890"
+              placeholder="03456789012"
               placeholderTextColor={colors.textSecondary}
               keyboardType="phone-pad"
             />
@@ -184,7 +184,7 @@ const CheckoutScreen: React.FC<CheckoutScreenProps> = ({ navigation }) => {
               style={[styles.input, styles.textArea, errors.address && styles.inputError]}
               value={formData.address}
               onChangeText={text => updateField('address', text)}
-              placeholder="123 Main Street, Apt 4B"
+              placeholder="House No. 1, Jinnah Street, Lahore"
               placeholderTextColor={colors.textSecondary}
               multiline
               numberOfLines={3}
@@ -201,7 +201,7 @@ const CheckoutScreen: React.FC<CheckoutScreenProps> = ({ navigation }) => {
                 style={[styles.input, errors.city && styles.inputError]}
                 value={formData.city}
                 onChangeText={text => updateField('city', text)}
-                placeholder="New York"
+                placeholder="Lahore"
                 placeholderTextColor={colors.textSecondary}
               />
               {errors.city && (
@@ -215,7 +215,7 @@ const CheckoutScreen: React.FC<CheckoutScreenProps> = ({ navigation }) => {
                 style={[styles.input, errors.zipCode && styles.inputError]}
                 value={formData.zipCode}
                 onChangeText={text => updateField('zipCode', text)}
-                placeholder="10001"
+                placeholder="54000"
                 placeholderTextColor={colors.textSecondary}
                 keyboardType="number-pad"
               />
