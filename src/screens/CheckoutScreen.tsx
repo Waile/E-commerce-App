@@ -4,7 +4,6 @@ import {
   Text,
   FlatList,
   StyleSheet,
-  TouchableOpacity,
   Pressable,
 } from 'react-native';
 import { useAppDispatch, useAppSelector } from '../hooks/useAppDispatch';
@@ -96,6 +95,20 @@ const CheckoutScreen: React.FC<CheckoutScreenProps> = ({ navigation }) => {
   const handleOrderSuccess = () => {
     dispatch(clearCart());
     setShowSuccessAlert(false);
+    
+    // Reset form to initial empty state
+    setFormData({
+      fullName: '',
+      email: '',
+      phone: '',
+      address: '',
+      city: '',
+      zipCode: '',
+    });
+    
+    // Clear any validation errors
+    setErrors({});
+    
     navigation.getParent()?.navigate('Products');
   };
 

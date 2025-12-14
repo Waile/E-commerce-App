@@ -9,18 +9,18 @@ interface OrderSummaryItemProps {
 }
 
 const OrderSummaryItem: React.FC<OrderSummaryItemProps> = ({ item, isLast }) => {
-  const itemTotal = item.quantity * item.product.price;
+  const itemTotal = item?.quantity * item?.product?.price;
 
   return (
     <View style={[styles.orderItem, isLast && styles.lastItem]}>
       <Text style={styles.itemName} numberOfLines={1}>
-        {item.product.title}
+        {item?.product?.title}
       </Text>
       <Text style={styles.itemDetails}>
-        {item.quantity} × ${item.product.price}
+        {item?.quantity} × ${item?.product?.price}
       </Text>
       <Text style={styles.itemPrice}>
-        ${itemTotal.toFixed(2)}
+        ${itemTotal?.toFixed(2)}
       </Text>
     </View>
   );
@@ -34,7 +34,7 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.sm,
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
-    paddingHorizontal:spacing.md
+    paddingHorizontal:spacing.md,
   },
   lastItem: {
     borderBottomWidth: 0,
