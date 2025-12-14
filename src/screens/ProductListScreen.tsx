@@ -77,7 +77,9 @@ const ProductListScreen: React.FC<ProductListScreenProps> = ({ navigation }) => 
       } else {
         await dispatch(fetchProductsByCategory(selectedCategory)).unwrap();
       }
-    } catch (err) {
+    } catch (error) {
+      console.log("Error fetching products: ", error);
+      
       // Error handled by Redux
     }
     setRefreshing(false);
