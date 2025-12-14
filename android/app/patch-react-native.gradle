@@ -1,0 +1,37 @@
+// Gradle script to patch React Native 0.83.0 graphicsConversions.h bug
+
+task patchReactNativeHeaders {
+    doLast {
+        def cacheDir = file("${System.getProperty('user.home')}/.gradle/caches")
+        def found = false
+        
+        if (cacheDir.exists()) {
+            cacheDir.eachFileRecurse { file ->
+                if (file.name == 'graphicsConversions.h' && file.path.contains('react-android-0.83.0')) {
+                    println "Patching: ${file.path}"
+                    def content = file.text
+                    def patched = content.replace(
+                        'return std::format("{}%", dimension.value);',
+                        'return folly::to<std::string>(dimension.value) + "%";'
+                    )
+                    if (content != patched) {
+                        file.text = patched
+                        println "  ✓ Successfully patched"
+                        found = true
+                    }
+                }
+            }
+        }
+        
+        if (!found) {
+            println "No graphicsConversions.h files found to patch"
+        }
+    }
+}
+
+// Run patch before C++ compilation tasks
+tasks.whenTaskAdded { task ->
+    if (task.name.startsWith('externalNativeBuild') || task.name.startsWith('buildCMake')) {
+        task.dependsOn patchReactNativeHeaders
+    }
+}
