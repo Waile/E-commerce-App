@@ -112,7 +112,7 @@ const ProductListScreen: React.FC<ProductListScreenProps> = ({ navigation }) => 
           onSearch={handleSearch}
         />
       </View>
-
+    
       <CategoryFilter
         categories={categories}
         selectedCategory={selectedCategory}
